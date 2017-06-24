@@ -2,8 +2,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include “bcm_host.h”
-#include “ilclient.h”
+#include "bcm_host.h"
+#include "ilclient.h"
 static  COMPONENT_T *image_encode = NULL;
 static  char* filename  ;
 int width,height;
@@ -15,32 +15,32 @@ void  donecallback(void *data, COMPONENT_T *comp)
   out = ilclient_get_output_buffer(image_encode, 341, 1);
   if(out->nFilledLen == 0)
     {
-      printf(“\nSOmthing is wrong in encoder”); fflush(stdout);
+      printf("\nSOmthing is wrong in encoder"); fflush(stdout);
       return ;
     }
-  outf = fopen(filename, “w”);
+  outf = fopen(filename, "w");
   if (outf == NULL)
     {
-      printf(“Failed to open ‘%s’ for writing image\n”, filename);
+      printf("Failed to open ‘%s’ for writing image\n", filename);
       return ;
     }
   if (out != NULL)
     {
-      printf(“%d bytes are ready to be put in JPG file “,out->nFilledLen);fflush(stdout);
+      printf("%d bytes are ready to be put in JPG file ",out->nFilledLen);fflush(stdout);
       result = fwrite(out->pBuffer, 1, out->nFilledLen, outf);
       if (result != out->nFilledLen)
 	{
-	  printf(” \n%x Error emptying buffer to file”, result);
+	  printf(" \n%x Error emptying buffer to file", result);
 	}
       else
 	{
-	  printf(“Writing frame  %d bytes\n”,out->nFilledLen);
+	  printf("Writing frame  %d bytes\n",out->nFilledLen);
 	}
       out->nFilledLen = 0;
     }
   else
     {
-      printf(” \n No Buffer on  Image Encoding Output Port”);
+      printf(" \n No Buffer on  Image Encoding Output Port");
     }
   fclose(outf);
   return ;
@@ -67,13 +67,13 @@ static int image_encoder(char *outputfilename ,OMX_U8* data, int len)
   }
   ilclient_set_fill_buffer_done_callback(client,donecallback ,NULL);
   // create image_encode
-  result = ilclient_create_component(client, &image_encode, “image_encode”,
+  result = ilclient_create_component(client, &image_encode, "image_encode",
 				      ILCLIENT_DISABLE_ALL_PORTS |
 				      ILCLIENT_ENABLE_INPUT_BUFFERS |
 				     ILCLIENT_ENABLE_OUTPUT_BUFFERS);
   if (result != 0)
     {
-      printf(“ilclient_create_component() for image_encode failed with %x!\n”,result);
+      printf("ilclient_create_component() for image_encode failed with %x!\n",result);
       return -1;
     }
   list[0] = image_encode;
@@ -84,7 +84,7 @@ static int image_encoder(char *outputfilename ,OMX_U8* data, int len)
   def.nPortIndex = 340;
   if (OMX_GetParameter(ILC_GET_HANDLE(image_encode), OMX_IndexParamPortDefinition,&def) != OMX_ErrorNone)
     {
-      printf(“%s:%d: OMX_GetParameter() for image_encode port 340 failed!\n”, __FUNCTION__, __LINE__);
+      printf("%s:%d: OMX_GetParameter() for image_encode port 340 failed!\n", __FUNCTION__, __LINE__);
       exit(1);
     }
   def.format.image.nFrameWidth = width;
@@ -97,7 +97,7 @@ static int image_encoder(char *outputfilename ,OMX_U8* data, int len)
 			    OMX_IndexParamPortDefinition, &def);
   if (result != OMX_ErrorNone)
     {
-      printf(“%s:%d: OMX_SetParameter() for image_encode port 340 failed with %x!\n”,__FUNCTION__, __LINE__, result);
+      printf("%s:%d: OMX_SetParameter() for image_encode port 340 failed with %x!\n",__FUNCTION__, __LINE__, result);
       exit(1);
     }
   memset(&format, 0, sizeof(OMX_IMAGE_PARAM_PORTFORMATTYPE));
@@ -105,54 +105,54 @@ static int image_encoder(char *outputfilename ,OMX_U8* data, int len)
   format.nVersion.nVersion = OMX_VERSION;
   format.nPortIndex = 341;
   format.eCompressionFormat = OMX_IMAGE_CodingJPEG;
-  printf(“OMX_SetParameter for image_encode:341…\n”);
+  printf("OMX_SetParameter for image_encode:341…\n");
   result = OMX_SetParameter(ILC_GET_HANDLE(image_encode),
 			    OMX_IndexParamImagePortFormat, &format);
   if (result != OMX_ErrorNone)
     {
-      printf(“%s:%d: OMX_SetParameter() for image_encode port 341 failed with %x!\n”,__FUNCTION__, __LINE__, result);
+      printf("%s:%d: OMX_SetParameter() for image_encode port 341 failed with %x!\n",__FUNCTION__, __LINE__, result);
       exit(1);
     }
-  printf(“encode to idle…\n”);
+  printf("encode to idle…\n");
   if (ilclient_change_component_state(image_encode, OMX_StateIdle) == -1)
     {
-      printf(“%s:%d: ilclient_change_component_state(image_encode, OMX_StateIdle) failed”,__FUNCTION__, __LINE__);
+      printf("%s:%d: ilclient_change_component_state(image_encode, OMX_StateIdle) failed",__FUNCTION__, __LINE__);
     }
-  printf(“enabling port buffers for 340…\n”);
+  printf("enabling port buffers for 340…\n");
   if (ilclient_enable_port_buffers(image_encode, 340, NULL, NULL, NULL) != 0)
     {
-      printf(“enabling port buffers for 340 failed!\n”);
+      printf("enabling port buffers for 340 failed!\n");
       exit(1);
     }
-  printf(“enabling port buffers for 341…\n”);
+  printf("enabling port buffers for 341…\n");
   if (ilclient_enable_port_buffers(image_encode, 341, NULL, NULL, NULL) != 0)
     {
-      printf(“enabling port buffers for 341 failed!\n”);
+      printf("enabling port buffers for 341 failed!\n");
       exit(1);
     }
-  printf(“encode to executing…\n”);
+  printf("encode to executing…\n");
   ilclient_change_component_state(image_encode, OMX_StateExecuting);
-  printf(“looping for buffers…\n”);
+  printf("looping for buffers…\n");
   do {
     out = ilclient_get_output_buffer(image_encode, 341, 1);
     result = OMX_FillThisBuffer(ILC_GET_HANDLE(image_encode), out);
     if (result != OMX_ErrorNone)
       {
-	printf(“Error filling buffer: %x\n”, result);
+	printf("Error filling buffer: %x\n", result);
       }
     buf = ilclient_get_input_buffer(image_encode, 340, 1);
     if (buf == NULL)
       {
-	printf(“Doh, no buffers for me!\n”);
+	printf("Doh, no buffers for me!\n");
       }
     else
       {
-	printf(“filling %d bytes\n”,len);
+	printf("filling %d bytes\n",len);
 	memcpy(buf->pBuffer, data ,len);
 	buf->nFilledLen = len;
 	if (OMX_EmptyThisBuffer(ILC_GET_HANDLE(image_encode), buf) !=
 	    OMX_ErrorNone) {
-	  printf(“Error emptying buffer!\n”);
+	  printf("Error emptying buffer!\n");
 	}
       }
   }
@@ -165,12 +165,12 @@ static int image_encoder(char *outputfilename ,OMX_U8* data, int len)
   // wait for EOS from encoder
   ilclient_wait_for_event(image_encode, OMX_EventBufferFlag, 341, 0, OMX_BUFFERFLAG_EOS, 0,
 			  ILCLIENT_BUFFER_FLAG_EOS, 10000);
-  printf(“disabling port buffers for 340 and 341…\n”);
+  printf("disabling port buffers for 340 and 341…\n");
   //ilclient_disable_port_buffers(image_encode, 340, NULL, NULL, NULL);
   //ilclient_disable_port_buffers(image_encode, 341, NULL, NULL, NULL);
   //ilclient_state_transition(list, OMX_StateIdle);
   //ilclient_state_transition(list, OMX_StateLoaded);
-  printf(“\n Encoding Complete , check JPG at input path”);fflush(stdout);
+  printf("\n Encoding Complete , check JPG at input path");fflush(stdout);
   ilclient_cleanup_components(list);
   OMX_Deinit();
   ilclient_destroy(client);
@@ -194,7 +194,7 @@ static int video_decode_resize_encode(char *filename ,char* outputfilename ,int 
   height = resize_height;
   memset(list, 0, sizeof(list));
   memset(tunnel, 0, sizeof(tunnel));
-  if((in = fopen(filename, “rb”)) == NULL)
+  if((in = fopen(filename, "rb")) == NULL)
     return -1;
   if((client = ilclient_init()) == NULL)
     {
@@ -208,11 +208,11 @@ static int video_decode_resize_encode(char *filename ,char* outputfilename ,int 
       return -3;
     }
   // create video_decode
-  if(ilclient_create_component(client, &video_decode, “video_decode”, ILCLIENT_DISABLE_ALL_PORTS | ILCLIENT_ENABLE_INPUT_BUFFERS) != 0)
+  if(ilclient_create_component(client, &video_decode, "video_decode", ILCLIENT_DISABLE_ALL_PORTS | ILCLIENT_ENABLE_INPUT_BUFFERS) != 0)
     status = -4;
   list[0] = video_decode;
   // create resize
-  if(status == 0 && ilclient_create_component(client, &resize, “resize”, ILCLIENT_DISABLE_ALL_PORTS|ILCLIENT_ENABLE_OUTPUT_BUFFERS) != 0)
+  if(status == 0 && ilclient_create_component(client, &resize, "resize", ILCLIENT_DISABLE_ALL_PORTS|ILCLIENT_ENABLE_OUTPUT_BUFFERS) != 0)
     status = -5;
   list[1] = resize;
   set_tunnel(tunnel, video_decode, 131, resize, 60);;
@@ -237,7 +237,7 @@ static int video_decode_resize_encode(char *filename ,char* outputfilename ,int 
 	  unsigned char *dest = buf->pBuffer;
 	  OMX_PARAM_PORTDEFINITIONTYPE portdef;
 	  data_length += fread(dest, 1, packet_size-data_length, in);
-	  printf(“\n Reading %d bytes from  file ” , data_length);fflush(stdout);
+	  printf("\n Reading %d bytes from  file " , data_length);fflush(stdout);
 	  if(port_settings_changed == 0 &&
 	     ((data_length > 0 && ilclient_remove_event(video_decode, OMX_EventPortSettingsChanged, 131, 0, 0, 1) == 0) ||
 	      (data_length == 0 && ilclient_wait_for_event(video_decode, OMX_EventPortSettingsChanged, 131, 0, 0, 1,ILCLIENT_EVENT_ERROR | ILCLIENT_PARAMETER_CHANGED, 10000) == 0)))
@@ -279,7 +279,7 @@ static int video_decode_resize_encode(char *filename ,char* outputfilename ,int 
 	      // once the state changes, both ports should become enabled and the resizer output should generate a settings changed event
 	      if( (ilclient_remove_event(resize, OMX_EventPortSettingsChanged, 61, 0, 0, 1) == 0))
 		{
-		  printf(“\n Enabling Resizer output “);
+		  printf("\n Enabling Resizer output ");
 		  portdef.nPortIndex = 61;
 		  OMX_GetParameter(ILC_GET_HANDLE(resize),OMX_IndexParamPortDefinition, &portdef);
 		  if (ilclient_enable_port_buffers(resize, 61, NULL, NULL, NULL) != 0)
@@ -297,7 +297,7 @@ static int video_decode_resize_encode(char *filename ,char* outputfilename ,int 
 	      //add eos if already not added
 	      if (!eos_flag )
 		{
-		  printf(“\n adding EOS on input”);fflush(stdout);
+		  printf("\n adding EOS on input");fflush(stdout);
 		  buf->nFilledLen = 0;
 		  buf->nFlags = OMX_BUFFERFLAG_TIME_UNKNOWN | OMX_BUFFERFLAG_EOS;
 		  if(OMX_EmptyThisBuffer(ILC_GET_HANDLE(video_decode), buf) != OMX_ErrorNone)
@@ -318,26 +318,26 @@ static int video_decode_resize_encode(char *filename ,char* outputfilename ,int 
 		  //need to get fps from decode data to write logic,just to check show first and then 1 fps
 		  if((frame_number == 1)||(frame_number %25 == 0))
 		    {
-		      printf(“\n need to convert %d bytes RGB to JPG  \n”,outbuf->nFilledLen);fflush(stdout);
+		      printf("\n need to convert %d bytes RGB to JPG  \n",outbuf->nFilledLen);fflush(stdout);
 		      image_encoder(outputfilename,outbuf->pBuffer,outbuf->nFilledLen);
 		    }
 		  else
 		    {
-		      printf(“\n need to skip this”);fflush(stdout);
+		      printf("\n need to skip this");fflush(stdout);
 		    }
 		  //anyhow free the memory
 		  OMX_FreeBuffer(ILC_GET_HANDLE(resize),61,outbuf);
 		  outbuf->nFilledLen = 0;
 		}
-	      printf(“\n filling buffer with %d bytes”,outbuf->nFilledLen);fflush(stdout);
+	      printf("\n filling buffer with %d bytes",outbuf->nFilledLen);fflush(stdout);
 	      OMX_FillThisBuffer(ILC_GET_HANDLE(resize), outbuf);
-	      printf(“\n  buffer filled”);fflush(stdout);
+	      printf("\n  buffer filled");fflush(stdout);
 	    }
 	  //resizer sees EOS in the stream on its output port ie work is done for this stream
 	  if( (ilclient_remove_event(resize, OMX_EventBufferFlag, 61, 0, OMX_BUFFERFLAG_EOS,0)==0))
 	    {
 	      //  flush to allow video_decode to disable its input port
-	      printf(“\n  received EOS on resizer output\n”);fflush(stdout);
+	      printf("\n  received EOS on resizer output\n");fflush(stdout);
 	      break;
 	    }
 	  buf->nFilledLen = data_length;
@@ -350,13 +350,13 @@ static int video_decode_resize_encode(char *filename ,char* outputfilename ,int 
 	    }
 	  else
 	    buf->nFlags = OMX_BUFFERFLAG_TIME_UNKNOWN;
-	  printf(“\n emptying buffer %d bytes”,buf->nFilledLen);fflush(stdout);
+	  printf("\n emptying buffer %d bytes",buf->nFilledLen);fflush(stdout);
 	  if(OMX_EmptyThisBuffer(ILC_GET_HANDLE(video_decode), buf) != OMX_ErrorNone)
 	    {
 	      status = -14;
 	      break;
 	    }
-	  printf(“\n  buffer emptied”);fflush(stdout);
+	  printf("\n  buffer emptied");fflush(stdout);
 	}
     }
   fclose(in);
@@ -374,5 +374,5 @@ static int video_decode_resize_encode(char *filename ,char* outputfilename ,int 
 int main (int argc, char **argv)
 {
   bcm_host_init();
-  return video_decode_resize_encode(argv[1],argv[2],argv[3],argv[4]);
+  return video_decode_resize_encode(argv[1],argv[2],atoi(argv[3]),atoi(argv[4]));
 }
